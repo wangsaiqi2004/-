@@ -48,12 +48,11 @@ services:
     networks:
       - vmqfox-network
 
-  # MySQL
+  # MySQL（仅在 docker 内部网络可见，不暴露到宿主机以避免和宿主机 MySQL 冲突）
+  # 如需从宿主机调试: docker exec -it vmqfox-mysql mysql -uroot -p
   mysql:
     image: mysql:5.7
     container_name: vmqfox-mysql
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
     restart: unless-stopped
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-vmqfox123}
@@ -95,12 +94,10 @@ services:
     networks:
       - vmqfox-network
 
-  # Redis
+  # Redis（仅在 docker 内部网络可见，不暴露到宿主机）
   redis:
     image: redis:7-alpine
     container_name: vmqfox-redis
-    ports:
-      - "${REDIS_PORT:-6380}:6379"
     restart: unless-stopped
     environment:
       - TZ=Asia/Shanghai
