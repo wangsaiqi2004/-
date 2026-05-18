@@ -1,0 +1,27 @@
+# Secrets — 绝对不能进仓库
+.env
+.env.local
+.env.*.local
+
+# Claude Code 工作目录（含项目记忆、对话日志）
+.claude/
+
+# 第三方依赖（由 deploy.sh 自动 clone）
+/vmqfox-backend/
+
+# Adapter 运行时数据
+/vmqfox-adapter/data/
+/vmqfox-adapter/node_modules/
+/vmqfox-adapter/*.sqlite
+/vmqfox-adapter/*.sqlite-*
+/vmqfox-adapter/.DS_Store
+
+# 临时与日志
+*.log
+*.tmp
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+{
+  "name": "vmqfox-adapter",
+  "version": "1.0.0",
+  "description": "Epay-protocol adapter that bridges NewAPI / Sum API to V免签fox (VMQ)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "axios": "^1.7.2",
+    "better-sqlite3": "^11.3.0"
+  }
+}
