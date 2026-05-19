@@ -55,12 +55,15 @@ fi
 log "启动 MySQL 容器..."
 docker compose up -d mysql
 
-log "等待 MySQL 健康（最长 60s）..."
+log "等待 MySQL 真正就绪（root 密码生效 + vmq.sql 导入完成，最长 120s）..."
+# 注意: mysqladmin ping 在 MySQL 5.7 初始化阶段就会返回 OK（无密码临时端口），
+# 但此时 root 密码和 docker-entrypoint-initdb.d 里的 vmq.sql 都还没执行完。
+# 所以这里改用真实查询 setting 表来判断就绪。
 MYSQL_READY=0
-for i in $(seq 1 30); do
-  if docker exec vmqfox-mysql mysqladmin ping -uroot -p"${MYSQL_ROOT_PASSWORD:-vmqfox123}" --silent >/dev/null 2>&1; then
+for i in $(seq 1 60); do
+  if docker exec vmqfox-mysql mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-vmqfox123}" vmq -e "SELECT 1 FROM setting LIMIT 1" >/dev/null 2>&1; then
     MYSQL_READY=1
-    log "MySQL 就绪"
+    log "MySQL 就绪（数据库已初始化）"
     break
   fi
   sleep 2
