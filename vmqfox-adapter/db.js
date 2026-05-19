@@ -1,43 +1,49 @@
-const Database = require('better-sqlite3');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
+// 简单的文件 JSON 存储。订单映射量很小（一台机器一天最多几千条），
+// 完全不需要 SQLite——纯文件读写更省心，零编译依赖。
 const DATA_DIR = process.env.DATA_DIR || '/data';
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
 
-const db = new Database(path.join(DATA_DIR, 'adapter.sqlite'));
-db.pragma('journal_mode = WAL');
+const FILE = path.join(DATA_DIR, 'orders.json');
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS orders (
-    out_trade_no TEXT PRIMARY KEY,
-    pid          TEXT NOT NULL,
-    notify_url   TEXT NOT NULL,
-    return_url   TEXT,
-    name         TEXT,
-    money        TEXT NOT NULL,
-    epay_type    TEXT NOT NULL,
-    param        TEXT,
-    vmq_order_id TEXT,
-    created_at   INTEGER NOT NULL,
-    notified     INTEGER NOT NULL DEFAULT 0
-  )
-`);
+let orders = {};
+try {
+  if (fs.existsSync(FILE)) {
+    orders = JSON.parse(fs.readFileSync(FILE, 'utf8'));
+    console.log(`[db] loaded ${Object.keys(orders).length} orders from ${FILE}`);
+  }
+} catch (e) {
+  console.warn(`[db] failed to load ${FILE}, starting fresh:`, e.message);
+  orders = {};
+}
 
-const insertStmt = db.prepare(`
-  INSERT OR REPLACE INTO orders
-    (out_trade_no, pid, notify_url, return_url, name, money, epay_type, param, vmq_order_id, created_at, notified)
-  VALUES
-    (@out_trade_no, @pid, @notify_url, @return_url, @name, @money, @epay_type, @param, @vmq_order_id, @created_at, 0)
-`);
-
-const updateVmqOrderIdStmt = db.prepare(`UPDATE orders SET vmq_order_id = @vmq_order_id WHERE out_trade_no = @out_trade_no`);
-const findStmt = db.prepare(`SELECT * FROM orders WHERE out_trade_no = ?`);
-const markNotifiedStmt = db.prepare(`UPDATE orders SET notified = 1 WHERE out_trade_no = ?`);
+function persist() {
+  // 原子写：先写 .tmp 再 rename，避免进程崩溃时文件半残
+  const tmp = FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(orders, null, 2));
+  fs.renameSync(tmp, FILE);
+}
 
 module.exports = {
-  saveOrder(o) { insertStmt.run({ ...o, created_at: Date.now() }); },
-  setVmqOrderId(out_trade_no, vmq_order_id) { updateVmqOrderIdStmt.run({ out_trade_no, vmq_order_id }); },
-  findOrder(out_trade_no) { return findStmt.get(out_trade_no); },
-  markNotified(out_trade_no) { markNotifiedStmt.run(out_trade_no); },
+  saveOrder(o) {
+    orders[o.out_trade_no] = { ...o, created_at: Date.now(), notified: 0 };
+    persist();
+  },
+  setVmqOrderId(out_trade_no, vmq_order_id) {
+    if (orders[out_trade_no]) {
+      orders[out_trade_no].vmq_order_id = vmq_order_id;
+      persist();
+    }
+  },
+  findOrder(out_trade_no) {
+    return orders[out_trade_no] || null;
+  },
+  markNotified(out_trade_no) {
+    if (orders[out_trade_no]) {
+      orders[out_trade_no].notified = 1;
+      persist();
+    }
+  },
 };
