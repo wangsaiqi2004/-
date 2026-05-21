@@ -80,10 +80,12 @@ app.listen(CONFIG.port, '0.0.0.0', () => {
   console.log(`  VMQ API:           ${CONFIG.vmqApiUrl}`);
   console.log(`  Adapter internal:  ${CONFIG.adapterInternalUrl}`);
   console.log(`  Epay PID:          ${CONFIG.epayPid}`);
-  // 模拟监控端心跳，避免 V免签 jkstate 被重置为 -1。
-  // 生产环境装了真实安卓 APK 之后，APK 自己会心跳，此循环可删除。
-  if (CONFIG.vmqKey) {
+  // 仅在没有真实安卓 APK 监控端时才打开（设 FAKE_HEARTBEAT=1）。
+  // 生产环境用 VmqApk 真心跳，这里必须关——否则两路心跳互相覆盖。
+  if (CONFIG.vmqKey && process.env.FAKE_HEARTBEAT === '1') {
     vmq.startHeartbeatLoop(30000);
-    console.log('  Heartbeat loop:    on (30s interval)');
+    console.log('  Heartbeat loop:    on (FAKE_HEARTBEAT=1, 30s interval)');
+  } else {
+    console.log('  Heartbeat loop:    off (expecting real APK heartbeat)');
   }
 });

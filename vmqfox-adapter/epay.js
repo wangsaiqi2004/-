@@ -115,7 +115,7 @@ class EpayAdapter {
       pid: String(local.pid),
       trade_no: local.vmq_order_id || out_trade_no,
       out_trade_no: local.out_trade_no,
-      type: VmqClient.vmqTypeToEpay(query.type),
+      type: local.epay_type || VmqClient.vmqTypeToEpay(query.type),
       name: local.name || '商品',
       money: local.money,
       trade_status: 'TRADE_SUCCESS',

@@ -98,11 +98,16 @@ class VmqClient {
    * 易支付 type → VMQ type 映射。
    *   alipay / aliweb / aliwap → 2
    *   wxpay / wechat → 1
+   *   custom1 → 2 (支付宝)，custom2 → 1 (微信)，custom3 → 2 (备用支付宝)
+   *   Sum API / NewAPI 的「自定义通道」按上面约定分配；如需调换，改这里即可。
    */
   static epayTypeToVmq(epayType) {
     const t = String(epayType || '').toLowerCase();
     if (t.includes('ali')) return 2;
     if (t.includes('wx') || t.includes('wechat')) return 1;
+    if (t === 'custom1') return 2;
+    if (t === 'custom2') return 1;
+    if (t === 'custom3') return 2;
     return null;
   }
 }
