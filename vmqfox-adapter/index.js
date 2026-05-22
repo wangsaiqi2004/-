@@ -63,11 +63,12 @@ app.all('/api.php', (req, res) => {
   res.json(adapter.queryOrder(params));
 });
 
-// V免签 → 适配器 回调 (GET)
-app.get('/vmq_notify', async (req, res) => {
+// V免签 → 适配器 回调 (GET/POST)
+app.all('/vmq_notify', async (req, res) => {
+  const params = mergeParams(req);
   try {
-    const result = await adapter.handleVmqNotify(req.query, axios);
-    console.log('[vmq_notify]', req.query.payId, '→ merchant resp:', result.merchantResp);
+    const result = await adapter.handleVmqNotify(params, axios);
+    console.log('[vmq_notify]', params.payId, '→ merchant resp:', result.merchantResp);
     res.send(result.ok ? 'success' : `fail: merchant returned "${result.merchantResp}"`);
   } catch (err) {
     console.error('[vmq_notify]', err.message);
